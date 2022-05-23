@@ -1,4 +1,5 @@
 -- Problem 20
+-- Categories, and the total products in each category
 
 SELECT
   c.categoryname,
