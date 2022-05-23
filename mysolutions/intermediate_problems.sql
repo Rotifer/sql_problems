@@ -11,5 +11,21 @@ GROUP BY
   c.categoryname;
 
 -- Problem 21
+-- Total customers per country/city
+
+SELECT
+  c.country,
+  c.city,
+  count(customerid)
+FROM
+  customers c
+GROUP BY
+  c.country,
+  c.city;
+  
+-- Problem 22
+-- Products that need reordering
+
+
 
 
