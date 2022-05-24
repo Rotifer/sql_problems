@@ -159,5 +159,111 @@ Check this out.! It works in both SQL Server and PostgreSQL.
 
 -- Problem 41. Late orders
 
+SELECT
+  orderid,
+  orderdate::DATE,
+  requireddate::DATE,
+  shippeddate::DATE
+FROM
+  orders
+WHERE
+  shippeddate >= requireddate;
+  
+-- Problem 42. Late orders—which employees?
 
+SELECT
+  e.employeeid,
+  e.lastname,
+  count(o.orderid) total_late_orders
+FROM
+  orders o
+  NATURAL JOIN employees e
+WHERE
+  o.shippeddate >= o.requireddate
+GROUP BY
+  e.employeeid,
+  e.lastname
+ORDER BY
+  total_late_orders DESC;
+  
+-- Problem 43. Late orders vs. total orders
+
+WITH late_orders AS (
+SELECT 
+    employeeid,
+    count(*) late_orders
+FROM
+    orders
+WHERE
+ requiredDate <= shippeddate
+GROUP BY
+   employeeid),
+total_orders AS (
+SELECT 
+    employeeid,
+    count(*) all_orders
+FROM 
+    orders
+GROUP BY 
+   employeeid    
+)
+SELECT
+  e.employeeid,
+  e.lastname,
+  total_orders.all_orders,
+  late_orders.late_orders
+FROM
+  late_orders
+  NATURAL JOIN total_orders
+  NATURAL JOIN employees e
+ORDER BY 1;
+
+-- Problem 44. Late orders vs. total orders—missing employee
+
+WITH late_orders AS (
+SELECT 
+    employeeid,
+    count(*) late_orders
+FROM
+    orders
+WHERE
+ requiredDate <= shippeddate
+GROUP BY
+   employeeid),
+total_orders AS (
+SELECT 
+    employeeid,
+    count(*) all_orders
+FROM 
+    orders
+GROUP BY 
+   employeeid    
+),
+orders AS
+(
+SELECT
+  lo_.employeeid,
+  to_.all_orders,
+  lo_.late_orders
+FROM
+  total_orders to_
+  LEFT JOIN late_orders lo_ ON to_.employeeid = lo_.employeeid
+)
+SELECT
+  e.employeeid,
+  e.lastname,
+  o.all_orders,
+  o.late_orders
+FROM
+  employees e
+  LEFT JOIN orders o ON e.employeeid = o.employeeid
+ORDER BY 1;
+
+/*
+Revisit this one
+Not got the multiple joins correct when mixing LEFT with INNER.
+I need to review this!
+*/
+
+-- Problem 45. Late orders vs. total orders—fix null
 
