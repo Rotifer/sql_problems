@@ -78,3 +78,86 @@ ORDER BY
 /*
 Check out date_trunc and interval
 */
+
+-- Problem 36. Orders with many line items
+
+SELECT
+  orderid,
+  COUNT(productid) total_order_details
+FROM
+  orderdetails
+GROUP BY
+  orderid
+ORDER BY
+  COUNT(productid) DESC
+LIMIT 10;
+
+-- Problem 37. Orders—random assortment
+
+SELECT
+  orderid
+FROM
+  orders
+ORDER BY
+  random()
+LIMIT 17;
+
+-- Problem 38. Orders—accidental double-entry
+
+SELECT DISTINCT orderid
+FROM
+  (SELECT orderid,
+          quantity,
+          COUNT(productid)
+   FROM orderdetails
+   WHERE quantity >= 60
+   GROUP BY orderid,
+            quantity
+   HAVING COUNT(productid) > 1) sq
+   
+-- Problem 39. Orders—accidental double-entry details
+
+SELECT *
+FROM orderdetails
+WHERE orderid IN
+    (SELECT DISTINCT orderid
+     FROM
+       (SELECT orderid,
+               quantity,
+               COUNT(productid)
+        FROM orderdetails
+        WHERE quantity >= 60
+        GROUP BY orderid,
+                 quantity
+        HAVING COUNT(productid) > 1) sqi)
+  AND quantity >= 60;
+  
+  
+-- Problem 40 Orders—accidental double-entry details, derived table
+
+SELECT OrderDetails.OrderID,
+       ProductID,
+       UnitPrice,
+       Quantity,
+       Discount
+FROM OrderDetails
+JOIN
+  (SELECT DISTINCT OrderID
+   FROM OrderDetails
+   WHERE Quantity >= 60
+   GROUP BY OrderID,
+            Quantity
+   HAVING Count(*) > 1) PotentialProblemOrders ON PotentialProblemOrders.OrderID = OrderDetails.OrderID
+ORDER BY OrderID,
+         ProductID
+         
+/*
+Copied the above directly from the book and just added DISTINCT and it works.
+But I do not understand the ON sub-clause in the HAVING clause.
+Check this out.! It works in both SQL Server and PostgreSQL.
+*/
+
+-- Problem 41. Late orders
+
+
+
