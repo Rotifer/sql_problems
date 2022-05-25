@@ -223,46 +223,38 @@ ORDER BY 1;
 WITH late_orders AS (
 SELECT 
     employeeid,
-    count(*) late_orders
+    count(*) total_orders
 FROM
     orders
 WHERE
  requiredDate <= shippeddate
 GROUP BY
    employeeid),
-total_orders AS (
+all_orders AS (
 SELECT 
     employeeid,
-    count(*) all_orders
+    count(*) total_orders
 FROM 
     orders
 GROUP BY 
    employeeid    
-),
-orders AS
-(
-SELECT
-  lo_.employeeid,
-  to_.all_orders,
-  lo_.late_orders
-FROM
-  total_orders to_
-  LEFT JOIN late_orders lo_ ON to_.employeeid = lo_.employeeid
 )
 SELECT
   e.employeeid,
   e.lastname,
-  o.all_orders,
-  o.late_orders
-FROM
-  employees e
-  LEFT JOIN orders o ON e.employeeid = o.employeeid
-ORDER BY 1;
+  all_orders.total_orders all_orders,
+  late_orders.total_orders late_orders
+FROM employees e
+JOIN all_orders ON all_orders.employeeid = e.employeeid
+LEFT JOIN late_orders ON late_orders.employeeid= e.employeeid
+ORDER BY e.employeeid;
 
 /*
 Revisit this one
 Not got the multiple joins correct when mixing LEFT with INNER.
 I need to review this!
+
+See outerjoins_workout.md in repo sqlite/sqlite/general_sql_notes
 */
 
 -- Problem 45. Late orders vs. total orders—fix null
