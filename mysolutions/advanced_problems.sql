@@ -259,3 +259,34 @@ See outerjoins_workout.md in repo sqlite/sqlite/general_sql_notes
 
 -- Problem 45. Late orders vs. total orders—fix null
 
+--Used COALESCE
+
+WITH late_orders AS (
+SELECT 
+    employeeid,
+    count(*) total_orders
+FROM
+    orders
+WHERE
+ requiredDate <= shippeddate
+GROUP BY
+   employeeid),
+all_orders AS (
+SELECT 
+    employeeid,
+    count(*) total_orders
+FROM 
+    orders
+GROUP BY 
+   employeeid    
+)
+SELECT
+  e.employeeid,
+  e.lastname,
+  all_orders.total_orders all_orders,
+  coalesce(late_orders.total_orders, 0) late_orders
+FROM employees e
+JOIN all_orders ON all_orders.employeeid = e.employeeid
+LEFT JOIN late_orders ON late_orders.employeeid= e.employeeid
+ORDER BY e.employeeid;
+
