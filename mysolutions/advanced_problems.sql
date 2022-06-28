@@ -290,3 +290,160 @@ JOIN all_orders ON all_orders.employeeid = e.employeeid
 LEFT JOIN late_orders ON late_orders.employeeid= e.employeeid
 ORDER BY e.employeeid;
 
+-- 46. Late orders vs. total orders—percentage
+
+WITH late_orders AS (
+SELECT 
+    employeeid,
+    count(*) total_orders
+FROM
+    orders
+WHERE
+ requiredDate <= shippeddate
+GROUP BY
+   employeeid),
+all_orders AS (
+SELECT 
+    employeeid,
+    count(*) total_orders
+FROM 
+    orders
+GROUP BY 
+   employeeid    
+)
+SELECT
+  e.employeeid,
+  e.lastname,
+  all_orders.total_orders all_orders,
+  coalesce(late_orders.total_orders, 0) late_orders,
+  coalesce(late_orders.total_orders, 0)::NUMERIC/all_orders.total_orders percent_late_orders
+FROM employees e
+JOIN all_orders ON all_orders.employeeid = e.employeeid
+LEFT JOIN late_orders ON late_orders.employeeid= e.employeeid
+ORDER BY e.employeeid;
+
+/*
+An integer divided by an integer returns an integer. Casting one or other of the numerator or denominator to NUMERIC
+gets around this problem and returns a type NUMERIC rather than INTEGER.
+*/
+
+-- 47. Late orders vs. total orders—fix decimal
+
+WITH late_orders AS (
+SELECT 
+    employeeid,
+    count(*) total_orders
+FROM
+    orders
+WHERE
+ requiredDate <= shippeddate
+GROUP BY
+   employeeid),
+all_orders AS (
+SELECT 
+    employeeid,
+    count(*) total_orders
+FROM 
+    orders
+GROUP BY 
+   employeeid    
+)
+SELECT
+  e.employeeid,
+  e.lastname,
+  all_orders.total_orders all_orders,
+  coalesce(late_orders.total_orders, 0) late_orders,
+  round(coalesce(late_orders.total_orders, 0)::NUMERIC/all_orders.total_orders, 2) percent_late_orders
+FROM employees e
+JOIN all_orders ON all_orders.employeeid = e.employeeid
+LEFT JOIN late_orders ON late_orders.employeeid= e.employeeid
+ORDER BY e.employeeid;
+
+-- Added the round function to do this.
+
+-- 48. Customer grouping
+
+SELECT
+  c.customerid,
+  c.contactname,
+  SUM(od.unitprice * od.quantity) total_order_amount,
+  CASE
+    WHEN SUM(od.unitprice::NUMERIC * od.quantity) BETWEEN 0 AND 1000 THEN 'Low'
+    WHEN SUM(od.unitprice::NUMERIC * od.quantity) BETWEEN 1000 AND 5000 THEN 'Medium'
+    WHEN SUM(od.unitprice::NUMERIC * od.quantity) BETWEEN 5000 AND 10000 THEN 'High'
+    WHEN SUM(od.unitprice::NUMERIC * od.quantity) >= 10000 THEN 'Very High'
+  END customer_group
+FROM
+  customers c
+  JOIN
+    orders o ON c.customerid = o.customerid
+  JOIN
+    orderdetails od ON o.orderid = od.orderid
+WHERE
+  EXTRACT(YEAR FROM o.orderdate) = 2016
+GROUP BY
+  c.customerid,
+  c.contactname  
+ORDER BY
+  c.customerid;
+  
+-- Note:Need to cast money type to numeric in the CASE statement to get this to work.
+
+-- 49. Customer grouping—fix null
+
+/*
+There's a problem with the answer to the previous question. The CustomerGroup value for one of the rows is null.
+Fix the SQL so that there are no nulls in the CustomerGroup field.
+*/
+
+/*
+This is not true for PostgreSQL, no NULL for the MAISD entry. In PostgreSQL, all 81 values are non-null using the SQL
+for the previous problem.
+*/
+
+-- 50. Customer grouping with percentage
+
+WITH cte AS(SELECT
+  c.customerid,
+  c.contactname,
+  SUM(od.unitprice * od.quantity) total_order_amount,
+  CASE
+    WHEN SUM(od.unitprice::NUMERIC * od.quantity) BETWEEN 0 AND 1000 THEN 'Low'
+    WHEN SUM(od.unitprice::NUMERIC * od.quantity) BETWEEN 1000 AND 5000 THEN 'Medium'
+    WHEN SUM(od.unitprice::NUMERIC * od.quantity) BETWEEN 5000 AND 10000 THEN 'High'
+    WHEN SUM(od.unitprice::NUMERIC * od.quantity) >= 10000 THEN 'Very High'
+  END customer_group
+FROM
+  customers c
+  JOIN
+    orders o ON c.customerid = o.customerid
+  JOIN
+    orderdetails od ON o.orderid = od.orderid
+WHERE
+  EXTRACT(YEAR FROM o.orderdate) = 2016
+GROUP BY
+  c.customerid,
+  c.contactname  
+ORDER BY
+  c.customerid),
+totals AS (SELECT
+  customer_group,
+  count(customerid) total_in_group,
+  SUM(count(customerid)) OVER() total
+FROM 
+  cte
+GROUP BY
+  customer_group
+)
+SELECT
+  customer_group,
+  total_in_group,
+  total_in_group::NUMERIC/total percentage_in_group
+FROM
+  totals
+ORDER BY
+  total_in_group DESC;
+
+-- Note the use of SUM as a window function.
+
+-- 51. Customer grouping—flexible
