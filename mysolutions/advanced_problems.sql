@@ -447,3 +447,85 @@ ORDER BY
 -- Note the use of SUM as a window function.
 
 -- 51. Customer grouping—flexible
+
+WITH orders_totals_2016 AS (SELECT
+  c.customerid,
+  c.companyname,
+  sum(od.quantity * od.unitprice) total_order_amount                      
+FROM 
+  customers c
+  JOIN orders o ON o.customerid = c.customerid
+  JOIN orderdetails od ON o.orderid = od.orderid
+WHERE
+  o.orderdate >= '20160101'
+  AND
+    o.orderdate  < '20170101'
+GROUP BY
+  c.customerid,
+  c.companyname)
+SELECT
+  ot.customerid,
+  ot.companyname,
+  ot.total_order_amount,
+  cgt.customergroupname 
+FROM
+  orders_totals_2016 ot
+  JOIN customergroupthresholds cgt 
+    ON (ot.total_order_amount > cgt.rangebottom AND ot.total_order_amount <= cgt.rangetop)
+ORDER BY
+  ot.customerid;
+  
+-- 52. Countries with suppliers or customers
+
+SELECT
+  country
+FROM
+  customers
+UNION
+SELECT
+  country
+FROM
+  suppliers
+ORDER BY 1;
+
+-- 53. Countries with suppliers or customers, version 2
+
+SELECT DISTINCT
+  s.country supplier_country,
+  c.country customer_country
+FROM
+  customers c
+  FULL OUTER JOIN suppliers s ON c.country = s.country
+ORDER BY 1, 2 NULLS FIRST;
+
+-- 54. Countries with suppliers or customers, version 3
+
+WITH supplier_country_totals AS (
+SELECT
+  s.country supplier_country,
+  count(supplierid) total_suppliers
+FROM
+  suppliers s
+GROUP BY
+  s.country),
+customer_country_totals AS (
+SELECT
+  c.country customer_country,
+  count(customerid) total_customers
+FROM
+  customers c
+GROUP BY
+  c.country)
+SELECT
+  coalesce(cct.customer_country, sct.supplier_country) country,
+  coalesce(sct.total_suppliers, 0) total_suppliers,
+  coalesce(cct.total_customers, 0) total_customers
+FROM 
+  supplier_country_totals sct
+  FULL OUTER JOIN  customer_country_totals cct ON sct.supplier_country = cct.customer_country
+ORDER BY 1;
+
+-- 55. First order in each country
+
+
+
