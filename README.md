@@ -10,7 +10,7 @@ Since PostgreSQL is free and its SQL dialect is considered to be the most standa
 
 You will need to create the PostgreSQL schema using the SQL script named __sql_practice_problems_pg__ in the source scripts folder of this repo.
 
-I translated the SQL Server version to PostgreSQL equivalent and then created PostgreSQL solutions for each of the 57 problems in the book, see the three SQL script files located in the mysolutions folder of this repo.
+I translated the SQL Server version to PostgreSQL equivalent and then created PostgreSQL solutions for each of the 57 problems in the book, see the three SQL script files located in the _mysolutions_ folder of this repo.
 
 To get maximum benefit from this using PostgreSQL, I recommend that:
 - You get a copy of the book - it is available to purchase as either a PDF or a paper copy.
