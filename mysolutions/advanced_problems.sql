@@ -527,5 +527,76 @@ ORDER BY 1;
 
 -- 55. First order in each country
 
+WITH orders_ordered AS (
+SELECT
+  shipcountry,
+  customerid,
+  orderid,
+  orderdate,
+  row_number() OVER (PARTITION BY shipcountry ORDER BY shipcountry, orderid) ordered
+FROM
+  orders)
+SELECT
+  shipcountry,
+  customerid,
+  orderid,
+  date(orderdate) orderdate
+FROM
+ orders_ordered
+WHERE
+  ordered = 1;
+  
+  
+-- 56. Customers with multiple orders in 5 day period
 
+WITH orders_days AS (
+SELECT 
+    initialorder.customerid,
+    initialorder.orderid initialorderid,
+    date(initialorder.orderdate) initialorderdate,
+    nextorder.orderid nextorderid,
+    date(nextorder.orderdate) nextorderdate,
+    date(nextorder.orderdate) - date(initialorder.orderdate) days_between_orders
+FROM 
+    orders initialorder
+JOIN orders nextorder ON initialorder.customerid = nextorder.customerid
+WHERE
+  nextOrder.orderdate > initialorder.orderdate
+ORDER BY 
+    initialorder.customerid,
+    initialorder.orderid)
+SELECT
+  *
+FROM
+  orders_days
+WHERE
+  days_between_orders BETWEEN 0 AND 5;
+  
+/*
+I only get 69 rows here, expected row count is 71
+
+NEED TO RE-CHECK
+*/
+
+-- 57. Customers with multiple orders in 5 day period, version 2
+
+WITH orders_lead_dates AS (
+SELECT
+  customerid,
+  date(orderdate) orderdate,
+  date(LEAD(orderdate,1) OVER (PARTITION BY customerid ORDER BY customerid, orderdate)) next_order_date
+FROM
+  orders
+ORDER BY
+  customerid,
+  orderid)
+SELECT
+  customerid,
+  orderdate,
+  next_order_date,
+  next_order_date - orderdate days_between_orders
+FROM
+  orders_lead_dates
+WHERE
+  (next_order_date - orderdate) <= 5
 
